@@ -26,15 +26,28 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
+                        // ✅ Libera acesso total às rotas de autenticação
                         .requestMatchers("/auth/**").permitAll()
+
+                        // ✅ Libera o Swagger para qualquer usuário (documentação pública)
+                        .requestMatchers(
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html"
+                        ).permitAll()
+
+                        // ✅ Regras específicas para acesso às rotas da API
                         .requestMatchers(HttpMethod.POST, "/api/pessoas").hasRole("ADMIN")
                         .requestMatchers("/api/pessoas/**").authenticated()
+
+                        // ✅ Qualquer outra requisição precisa estar autenticada
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
+
 
 
 
