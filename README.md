@@ -27,118 +27,169 @@ Se quiser que eu gere os endpoints REST no Postman, Swagger ou uma UI simples em
 | `ROLE_PROPRIETARIO` | Apenas seus dados  | Sim          | Não             |
 | `ROLE_RESIDENTE`    | Apenas seus dados  | Sim          | Não             |
 
-Endpoints que você tem (pelos controllers):
-Recurso	Método	URL	Descrição
-Pessoas	GET	/pessoas	Lista todas as pessoas
-Proprietários	GET	/proprietarios	Lista todos os proprietários
-Proprietários	POST	/proprietarios	Cria um novo proprietário
-Residentes	GET	/residentes	Lista todos os residentes
-Residentes	POST	/residentes	Cria um novo residente
+# 📦 Pessoa Service - API REST
 
-1. Listar todos (GET)
-Exemplo para listar todos os proprietários:
-Método: GET
+Este serviço é responsável pelo **cadastro e gerenciamento de pessoas** (proprietários e residentes) de um sistema de controle de condomínio.
 
-URL: http://localhost:8081/proprietarios
+---
 
-Sem corpo, só fazer a requisição.
+## 🔐 Autenticação
 
-2. Criar um Proprietário (POST)
-URL:
-http://localhost:8081/proprietarios
+Este serviço **exige autenticação via JWT**. O token deve ser obtido a partir da API `auth-service`.
 
-Corpo (JSON):
-json
-Copiar
-Editar
+Todos os endpoints (exceto os públicos, se existirem) requerem o envio de um token válido no cabeçalho:
+
+```
+Authorization: Bearer <seu_token_aqui>
+```
+
+---
+
+## 🧑‍💼 Entidade Pessoa
+
+A entidade `Pessoa` representa um usuário do sistema. O JSON armazenado tem a seguinte estrutura:
+
+```json
+{
+  "pessoaId": "68642fd7-880a-402c-badb-fe8463931c48",
+  "nome": "coisa linda Silva",
+  "cpf": "43349673691",
+  "telefone": "12999939699",
+  "email": "zezinh97939a@email.com",
+  "role": "ROLE_RESIDENTE",
+  "creationTimestamp": "2025-06-06T18:02:36.0632279",
+  "updateTimestamp": "2025-06-06T18:02:36.0632279"
+}
+```
+
+---
+
+## 🚀 Endpoints principais
+
+> Todos os endpoints abaixo exigem `Authorization: Bearer <token_jwt>`
+
+### 🔸 `GET /api/pessoas`
+
+🔍 Retorna uma lista de todas as pessoas cadastradas.
+
+---
+
+### 🔸 `GET /api/pessoas/{id}`
+
+🔍 Retorna os dados de uma pessoa específica por ID.
+
+---
+
+### 🔸 `POST /api/pessoas`
+
+📥 Cria uma nova pessoa.  
+**Body esperado (JSON):**
+
+```json
 {
   "nome": "João da Silva",
   "cpf": "12345678901",
-  "telefone": "11999999999",
-  "email": "joao.silva@email.com",
-  "imoveisVinculados": ["Apt 101", "Casa 202"]
+  "telefone": "12999998888",
+  "email": "joao@email.com",
+  "role": "ROLE_PROPRIETARIO"
 }
-3. Criar um Residente (POST)
-URL:
-http://localhost:8081/residentes
+```
 
-Corpo (JSON):
-json
-Copiar
-Editar
-{
-  "nome": "Maria Oliveira",
-  "cpf": "10987654321",
-  "telefone": "11988888888",
-  "email": "maria.oliveira@email.com",
-  "imovelAtual": "Apt 101"
-}
-4. Listar Residentes (GET)
-URL: http://localhost:8081/residentes
+---
 
-5. Listar Pessoas (GET)
-URL: http://localhost:8081/pessoas
+### 🔸 `PUT /api/pessoas/{id}`
 
-Dica para usar no Insomnia/Postman:
-Para GET: basta colocar a URL e mandar a requisição.
+✏️ Atualiza os dados de uma pessoa existente.
 
-Para POST: selecione método POST, cole a URL e no corpo (Body) escolha JSON e cole o JSON do exemplo acima.
+---
 
+### 🔸 `DELETE /api/pessoas/{id}`
 
--- Tabela pessoa (base para proprietários e residentes)
+🗑️ Remove uma pessoa do sistema.
+
+---
+
+## 🛡️ Permissões
+
+As permissões são baseadas no campo `role`, que pode ser:
+
+- 🛠️ `ROLE_ADMIN`
+- 🏠 `ROLE_PROPRIETARIO`
+- 👤 `ROLE_RESIDENTE`
+
+As regras de acesso devem ser controladas via JWT + filtros Spring Security.
+
+---
+
+## 🗄️ Banco de Dados
+
+Este serviço utiliza **PostgreSQL** com a seguinte estrutura:
+
+```sql
 CREATE TABLE pessoa (
-    id SERIAL PRIMARY KEY,
-    nome VARCHAR(255) NOT NULL,
-    cpf VARCHAR(11) NOT NULL UNIQUE,
-    telefone VARCHAR(20) NOT NULL,
-    email VARCHAR(255)
+  pessoa_id UUID PRIMARY KEY,
+  nome VARCHAR(255),
+  cpf VARCHAR(11) UNIQUE,
+  telefone VARCHAR(20),
+  email VARCHAR(255),
+  role VARCHAR(50),
+  creation_timestamp TIMESTAMP,
+  update_timestamp TIMESTAMP
 );
+```
 
--- Tabela proprietario (extensão de pessoa)
-CREATE TABLE proprietario (
-    id SERIAL PRIMARY KEY,
-    pessoa_id INTEGER NOT NULL UNIQUE REFERENCES pessoa(id) ON DELETE CASCADE,
-    -- Os imóveis vinculados aqui são uma lista, então vamos usar uma tabela separada para armazenar vários imóveis
-    -- Logo, só deixamos o id para a relação
-    -- Vamos criar uma tabela para os imóveis vinculados abaixo
-);
+---
 
--- Tabela para os imóveis vinculados ao proprietário
-CREATE TABLE imovel_vinculado (
-    id SERIAL PRIMARY KEY,
-    proprietario_id INTEGER NOT NULL REFERENCES proprietario(id) ON DELETE CASCADE,
-    descricao VARCHAR(255) NOT NULL
-);
+## ⚙️ Tecnologias
 
--- Tabela residente (extensão de pessoa)
-CREATE TABLE residente (
-    id SERIAL PRIMARY KEY,
-    pessoa_id INTEGER NOT NULL UNIQUE REFERENCES pessoa(id) ON DELETE CASCADE,
-    imovel_atual VARCHAR(255)
-);
+- ☕ Java 21
+- 🌱 Spring Boot 3.5
+- 🔐 Spring Security (JWT)
+- 🐘 PostgreSQL
+- 🛠️ Maven
+- 🧪 Swagger (opcional)
+- 🐳 Docker (opcional)
+- 📩 RabbitMQ (se usado para integração com `auth-service`)
 
--- Inserir pessoas
-INSERT INTO pessoa (nome, cpf, telefone, email) VALUES
-('João da Silva', '12345678901', '11999999999', 'joao.silva@email.com'),
-('Maria Oliveira', '10987654321', '11988888888', 'maria.oliveira@email.com');
+---
 
--- Inserir proprietario associando pessoa (exemplo João)
-INSERT INTO proprietario (pessoa_id) 
-SELECT id FROM pessoa WHERE cpf = '12345678901';
+## 🔁 Integração com Auth-Service
 
--- Inserir imoveis vinculados para o proprietario
-INSERT INTO imovel_vinculado (proprietario_id, descricao)
-SELECT p.id, 'Apt 101' FROM proprietario p
-JOIN pessoa pe ON pe.id = p.pessoa_id
-WHERE pe.cpf = '12345678901';
+- A autenticação é feita via token JWT gerado pela API `auth-service`
+- O token é validado nos filtros de segurança do `pessoa-service`
+- As `roles` definem o acesso aos endpoints protegidos
 
-INSERT INTO imovel_vinculado (proprietario_id, descricao)
-SELECT p.id, 'Casa 202' FROM proprietario p
-JOIN pessoa pe ON pe.id = p.pessoa_id
-WHERE pe.cpf = '12345678901';
+---
 
--- Inserir residente associando pessoa (exemplo Maria)
-INSERT INTO residente (pessoa_id, imovel_atual) 
-SELECT id, 'Apt 101' FROM pessoa WHERE cpf = '10987654321';
+## 📬 Exemplo de requisição com cURL
 
+```bash
+curl -X POST http://localhost:8081/api/pessoas \
+  -H "Authorization: Bearer eyJhbGciOi..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "nome": "Maria Oliveira",
+    "cpf": "98765432100",
+    "telefone": "12999997777",
+    "email": "maria@teste.com",
+    "role": "ROLE_RESIDENTE"
+}'
+```
 
+---
+
+## 📚 Documentação Swagger
+
+🧭 Acesse em:
+
+```
+http://localhost:8081/swagger-ui/index.html
+```
+
+---
+
+## 🧾 Licença
+
+Este projeto é de uso interno e acadêmico. Sinta-se livre para contribuir, modificar e adaptar conforme suas necessidades.
+
+---
