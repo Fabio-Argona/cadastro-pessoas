@@ -156,6 +156,7 @@ curl -X POST http://localhost:8081/api/pessoas \
 ```
 http://localhost:8081/swagger-ui/index.html
 ```
+![image](https://github.com/user-attachments/assets/fe89cfa2-fa9b-4a34-b9c1-b71633afab81)
 
 ---
 
